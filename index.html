@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefPay - Transparent Micro-Voucher Aid System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        indigoBrand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f766e 0%, #312e81 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Bar -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchRole('donor')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        <i class="fa-solid fa-hand-holding-heart"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-300">ReliefPay</span>
+                        <span class="hidden sm:inline-block text-xs bg-teal-900/80 text-teal-300 px-2 py-0.5 rounded-full ml-2 font-medium border border-teal-700">Micro-Voucher Aid</span>
+                    </div>
+                </div>
+
+                <!-- Global Live Metrics -->
+                <div class="hidden lg:flex items-center space-x-6 text-xs text-slate-300">
+                    <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-slate-400">Total Funded:</span>
+                        <span id="metric-total-funded" class="font-bold text-white">$1,450.00</span>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span class="text-slate-400">Redeemed:</span>
+                        <span id="metric-total-redeemed" class="font-bold text-emerald-400">$980.00</span>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span class="text-slate-400">Audit Rate:</span>
+                        <span class="font-bold text-teal-300">100% Verifiable</span>
+                    </div>
+                </div>
+
+                <!-- Role Switcher Tabs -->
+                <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+                    <button id="tab-donor" onclick="switchRole('donor')" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-1.5 bg-indigo-600 text-white shadow">
+                        <i class="fa-solid fa-heart text-pink-300"></i>
+                        <span>Donor</span>
+                    </button>
+                    <button id="tab-beneficiary" onclick="switchRole('beneficiary')" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all duration-200 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-mobile-screen-button text-teal-400"></i>
+                        <span>Beneficiary</span>
+                    </button>
+                    <button id="tab-merchant" onclick="switchRole('merchant')" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all duration-200 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-store text-amber-400"></i>
+                        <span>Merchant</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Judge Quick Tour Interactive Banner -->
+    <div class="bg-indigo-950 border-b border-indigo-900/60 text-indigo-100 py-2.5 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-xs gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">Judge Demo Guide</span>
+                <span>Experience the full closed-loop aid cycle live:</span>
+            </div>
+            <div class="flex items-center space-x-2 overflow-x-auto max-w-full py-1">
+                <button onclick="switchRole('donor'); focusMintForm();" class="hover:bg-indigo-800/80 bg-indigo-900/50 text-indigo-200 px-2.5 py-1 rounded border border-indigo-700 flex items-center space-x-1 whitespace-nowrap transition">
+                    <span class="font-bold text-teal-400">1.</span> <span>Mint Voucher</span>
+                </button>
+                <i class="fa-solid fa-arrow-right text-indigo-500 text-[10px]"></i>
+                <button onclick="switchRole('beneficiary')" class="hover:bg-indigo-800/80 bg-indigo-900/50 text-indigo-200 px-2.5 py-1 rounded border border-indigo-700 flex items-center space-x-1 whitespace-nowrap transition">
+                    <span class="font-bold text-teal-400">2.</span> <span>View Wallet & QR/SMS</span>
+                </button>
+                <i class="fa-solid fa-arrow-right text-indigo-500 text-[10px]"></i>
+                <button onclick="switchRole('merchant')" class="hover:bg-indigo-800/80 bg-indigo-900/50 text-indigo-200 px-2.5 py-1 rounded border border-indigo-700 flex items-center space-x-1 whitespace-nowrap transition">
+                    <span class="font-bold text-teal-400">3.</span> <span>Scan & Validate POS</span>
+                </button>
+                <i class="fa-solid fa-arrow-right text-indigo-500 text-[10px]"></i>
+                <button onclick="switchRole('donor'); scrollToAudit();" class="hover:bg-indigo-800/80 bg-indigo-900/50 text-indigo-200 px-2.5 py-1 rounded border border-indigo-700 flex items-center space-x-1 whitespace-nowrap transition">
+                    <span class="font-bold text-teal-400">4.</span> <span>View Realtime Proof</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================================================= -->
+        <!-- ROLE 1: DONOR PORTAL -->
+        <!-- ========================================================================= -->
+        <section id="view-donor" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="gradient-bg rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl">
+                    <i class="fa-solid fa-shield-heart"></i>
+                </div>
+                <div class="max-w-2xl relative z-10 space-y-3">
+                    <span class="inline-block bg-teal-500/30 backdrop-blur-md text-teal-200 px-3 py-1 rounded-full text-xs font-semibold border border-teal-400/30">
+                        💙 Verified Direct Aid Network
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Zero-Leakage Humanitarian Giving</h1>
+                    <p class="text-slate-200 text-sm leading-relaxed">
+                        Fund targeted digital micro-vouchers for essential groceries, medicine, or school supplies. Every dollar is tracked to merchant checkout receipts with 100% cryptographic proof.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Mint Voucher Interactive Form -->
+                <div id="mint-card-wrapper" class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-plus text-indigo-600"></i>
+                            <span>Issue Micro-Voucher</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Directly fund essential needs for verified local beneficiaries.</p>
+                    </div>
+
+                    <form id="mint-voucher-form" onsubmit="handleMintVoucher(event)" class="space-y-4">
+                        <!-- Donor Name -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Your Name / Organization</label>
+                            <input type="text" id="donor-name" required value="Elena Rostova" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                        </div>
+
+                        <!-- Beneficiary Select / Name -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Target Beneficiary or Group</label>
+                            <select id="beneficiary-select" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                <option value="Amina K. (Displaced Family)">Amina K. (Displaced Family - ID: #BF-901)</option>
+                                <option value="Marcus V. (Elderly Care)">Marcus V. (Elderly Care - ID: #BF-408)</option>
+                                <option value="Sophia T. (Student Aid)">Sophia T. (Student Aid - ID: #BF-312)</option>
+                                <option value="Community Food Pool">Community Relief Pool (Auto-assigned)</option>
+                            </select>
+                        </div>
+
+                        <!-- Category Selector -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Category & Merchant Restriction</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="voucher-category" value="Groceries" checked class="peer sr-only">
+                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-900 transition text-xs font-medium space-y-1">
+                                        <i class="fa-solid fa-basket-shopping text-teal-600 block text-base"></i>
+                                        <span>Groceries</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="voucher-category" value="Pharmacy" class="peer sr-only">
+                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-900 transition text-xs font-medium space-y-1">
+                                        <i class="fa-solid fa-capsules text-indigo-600 block text-base"></i>
+                                        <span>Pharmacy</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="voucher-category" value="Education" class="peer sr-only">
+                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-amber-600 peer-checked:bg-amber-50 peer-checked:text-amber-900 transition text-xs font-medium space-y-1">
+                                        <i class="fa-solid fa-book-open text-amber-600 block text-base"></i>
+                                        <span>School</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Amount Presets -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Funding Amount</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button type="button" onclick="setAmount(15)" class="amt-btn border border-slate-200 rounded-lg py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition">$15</button>
+                                <button type="button" onclick="setAmount(25)" class="amt-btn border-2 border-indigo-600 bg-indigo-50 rounded-lg py-1.5 text-xs font-bold text-indigo-700 transition">$25</button>
+                                <button type="button" onclick="setAmount(50)" class="amt-btn border border-slate-200 rounded-lg py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition">$50</button>
+                                <input type="number" id="custom-amount" placeholder="Custom" class="w-full text-center px-1 py-1.5 text-xs font-bold border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Issue Digital Micro-Voucher</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Transparency & Audit Feed -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Impact Summary Widgets -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <span class="text-xs text-slate-500 font-medium block">Active Vouchers</span>
+                            <span id="stat-active-count" class="text-xl font-bold text-slate-900 mt-1 block">3</span>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <span class="text-xs text-slate-500 font-medium block">Total Claimed</span>
+                            <span id="stat-claimed-amount" class="text-xl font-bold text-teal-600 mt-1 block">$980.00</span>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <span class="text-xs text-slate-500 font-medium block">Verified Receipts</span>
+                            <span id="stat-receipt-count" class="text-xl font-bold text-indigo-600 mt-1 block">14</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Audit Ledger -->
+                    <div id="audit-feed-section" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                                    <i class="fa-solid fa-list-check text-emerald-600"></i>
+                                    <span>Live Micro-Ledger Audit Feed</span>
+                                </h3>
+                                <p class="text-xs text-slate-500">Real-time cryptographic proof of redemption items from verified merchants.</p>
+                            </div>
+                            <span class="flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span> Live Blockchain Audit Log
+                            </span>
+                        </div>
+
+                        <!-- Audit Feed List -->
+                        <div id="audit-feed-list" class="space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                            <!-- Dynamic Content Inserted Here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- ROLE 2: BENEFICIARY VOUCHER WALLET -->
+        <!-- ========================================================================= -->
+        <section id="view-beneficiary" class="hidden space-y-6">
+            <!-- Profile Greeting & Mobile Switcher -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-teal-100 border-2 border-teal-500 flex items-center justify-center text-teal-800 font-bold text-lg">
+                        AK
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-900 text-lg">Welcome, Amina K.</h2>
+                        <div class="flex items-center space-x-2 text-xs text-slate-500 mt-0.5">
+                            <span>ID: <strong class="text-slate-700">#BF-901</strong></span>
+                            <span>•</span>
+                            <span class="text-emerald-600 font-medium"><i class="fa-solid fa-circle-check"></i> Verified Beneficiary</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleFeaturePhoneMode()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl border border-slate-300 transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-mobile-retro text-slate-600"></i>
+                        <span>Simulate Feature Phone (SMS/Offline Mode)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Wallet Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="beneficiary-vouchers-container">
+                <!-- Vouchers dynamically rendered here -->
+            </div>
+
+            <!-- Feature Phone SMS Simulation Modal / Card -->
+            <div id="sms-phone-modal" class="hidden bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-2xl max-w-md mx-auto space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-signal text-emerald-400 text-xs"></i>
+                        <span class="text-xs font-mono text-slate-400">GSM Network • SMS Mode</span>
+                    </div>
+                    <button onclick="toggleFeaturePhoneMode()" class="text-slate-400 hover:text-white text-xs"><i class="fa-solid fa-xmark"></i> Close</button>
+                </div>
+                <div class="bg-emerald-950/60 border border-emerald-800 p-4 rounded-xl font-mono text-xs space-y-2">
+                    <div class="text-emerald-400 font-bold">📩 RELIEFPAY SMS VOUCHER ALERT</div>
+                    <p class="text-slate-200">You received a $25 Grocery voucher from Elena Rostova.</p>
+                    <div class="bg-black/50 p-3 rounded text-center border border-emerald-800/80 my-2">
+                        <span class="text-slate-400 block text-[10px] uppercase">Show this 6-Digit Code to Merchant:</span>
+                        <span id="sms-code-display" class="text-2xl font-extrabold tracking-widest text-teal-300">784-912</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400">Valid at: Green Grocery Depot, QuickMart. Expires: 15 Oct 2026.</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[11px] text-slate-400">No smartphone or internet connection required. Merchants scan or type this code directly into their terminal.</p>
+                </div>
+            </div>
+
+            <!-- Participating Stores Map & Directory -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-map-location-dot text-indigo-600"></i>
+                            <span>Participating Local Vendors Near You</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Walk into these stores to redeem your voucher items directly.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium border border-indigo-200">
+                            <i class="fa-solid fa-store text-indigo-600 mr-1"></i> 3 Stores Active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="store-directory-container">
+                    <!-- Stores rendered dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- ROLE 3: LOCAL MERCHANT / VENDOR TERMINAL -->
+        <!-- ========================================================================= -->
+        <section id="view-merchant" class="hidden space-y-6">
+            <div class="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl font-bold">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="font-bold text-white text-lg">Green Grocery Depot Terminal</h2>
+                            <span class="text-[10px] bg-emerald-900 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-700">KYC Verified</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Merchant Account ID: #VND-8802 • Terminal #1</p>
+                    </div>
+                </div>
+                <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-right">
+                    <span class="text-[10px] text-slate-400 block uppercase font-medium">Instant Settlement Balance</span>
+                    <span id="merchant-settlement-balance" class="text-lg font-bold text-emerald-400">$645.00</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- QR / SMS Code Lookup Terminal -->
+                <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-qrcode text-amber-500"></i>
+                            <span>Voucher Scanner & Verification</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Scan QR or enter beneficiary 6-digit SMS code.</p>
+                    </div>
+
+                    <!-- Mock Scanner Input -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Enter Voucher ID or SMS Code</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="merchant-search-code" placeholder="e.g. 784-912 or VOUCH-8921" class="flex-grow px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500">
+                                <button onclick="lookupVoucher()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition">
+                                    Verify
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Load Presets for Judge Demo -->
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                            <span class="text-[11px] font-bold text-slate-600 block uppercase">Quick Demo Pickers:</span>
+                            <div id="quick-voucher-pickers" class="space-y-1.5">
+                                <!-- Dynamic voucher selection buttons -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Voucher Info Box -->
+                    <div id="selected-voucher-box" class="hidden p-4 rounded-xl border border-teal-200 bg-teal-50 space-y-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs font-bold text-teal-900 uppercase tracking-wider block" id="sv-category">GROCERIES VOUCHER</span>
+                                <span class="text-sm font-bold text-slate-900" id="sv-id">VOUCH-8921</span>
+                            </div>
+                            <span class="text-lg font-extrabold text-teal-700" id="sv-balance">$25.00</span>
+                        </div>
+                        <div class="text-xs text-slate-600 space-y-1 border-t border-teal-200/60 pt-2">
+                            <div>Beneficiary: <strong id="sv-beneficiary">Amina K.</strong></div>
+                            <div>Restrictions: <span id="sv-restrictions" class="text-teal-800 font-medium">Food, Staples, Milk, Produce ONLY</span></div>
+                            <div class="text-[10px] text-red-600 font-bold" id="sv-disallowed">⛔ Blocked: Alcohol, Tobacco, Electronics</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POS Calculator & Item Restriction Engine -->
+                <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-cart-shopping text-indigo-600"></i>
+                                <span>Itemized Checkout & Policy Validation</span>
+                            </h3>
+                            <p class="text-xs text-slate-500">System automatically blocks restricted non-essential items.</p>
+                        </div>
+                        <span id="validation-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            Awaiting Voucher
+                        </span>
+                    </div>
+
+                    <!-- Items Table -->
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-12 text-xs font-bold text-slate-500 border-b border-slate-200 pb-2 px-1">
+                            <span class="col-span-6">Item Description</span>
+                            <span class="col-span-3 text-center">Category</span>
+                            <span class="col-span-3 text-right">Price</span>
+                        </div>
+
+                        <!-- Sample Inventory Selector -->
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                            <span class="text-xs font-bold text-slate-700 block">Add Item from Store Inventory:</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <button type="button" onclick="addItemToCart('Fresh Vegetables & Rice', 'Food/Groceries', 12.00)" class="bg-white hover:bg-slate-100 border border-slate-300 p-2 rounded-lg text-left transition">
+                                    <span class="font-semibold block text-slate-800">Fresh Rice & Milk</span>
+                                    <span class="text-teal-600 font-bold">$12.00</span>
+                                </button>
+                                <button type="button" onclick="addItemToCart('Baby Formula', 'Food/Groceries', 13.00)" class="bg-white hover:bg-slate-100 border border-slate-300 p-2 rounded-lg text-left transition">
+                                    <span class="font-semibold block text-slate-800">Baby Formula</span>
+                                    <span class="text-teal-600 font-bold">$13.00</span>
+                                </button>
+                                <button type="button" onclick="addItemToCart('Basic Antibiotics', 'Pharmacy', 15.00)" class="bg-white hover:bg-slate-100 border border-slate-300 p-2 rounded-lg text-left transition">
+                                    <span class="font-semibold block text-slate-800">Antibiotics</span>
+                                    <span class="text-indigo-600 font-bold">$15.00</span>
+                                </button>
+                                <!-- Restricted Item for Test -->
+                                <button type="button" onclick="addItemToCart('Cigarettes / Tobacco Pack', 'Tobacco', 8.50)" class="bg-red-50 hover:bg-red-100 border border-red-200 p-2 rounded-lg text-left transition">
+                                    <span class="font-semibold block text-red-900">Tobacco Pack ⛔</span>
+                                    <span class="text-red-600 font-bold">$8.50</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cart List -->
+                        <div id="cart-items-list" class="space-y-2 min-h-[100px] border border-dashed border-slate-300 rounded-xl p-3 bg-slate-50/50">
+                            <p class="text-xs text-slate-400 text-center py-6">Cart is empty. Click inventory items above to scan them in.</p>
+                        </div>
+                    </div>
+
+                    <!-- Cart Totals & Settlement Action -->
+                    <div class="border-t border-slate-200 pt-4 space-y-3">
+                        <div class="flex justify-between text-sm font-bold">
+                            <span class="text-slate-600">Total Cart Amount:</span>
+                            <span id="cart-total-display" class="text-slate-900 text-base">$0.00</span>
+                        </div>
+
+                        <!-- Validation Error Alert -->
+                        <div id="policy-alert-box" class="hidden p-3 rounded-xl bg-red-100 border border-red-300 text-red-900 text-xs font-medium flex items-center space-x-2">
+                            <i class="fa-solid fa-triangle-exclamation text-red-600 text-base"></i>
+                            <span id="policy-alert-msg">Restriction Violation: Alcohol/Tobacco cannot be claimed with this Grocery voucher!</span>
+                        </div>
+
+                        <!-- Settle Button -->
+                        <button id="btn-settle" disabled onclick="executeSettlement()" class="w-full bg-emerald-600 disabled:bg-slate-300 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 text-sm">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Authorize Voucher & Complete Settlement</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- QR View Modal -->
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 text-center shadow-2xl border border-slate-100 relative">
+            <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-teal-600 uppercase tracking-wider block" id="qr-modal-category">Groceries Voucher</span>
+                <h3 class="font-extrabold text-slate-900 text-lg" id="qr-modal-id">VOUCH-8921</h3>
+                <p class="text-xs text-slate-500">Present this QR code to the cashier at checkout</p>
+            </div>
+
+            <!-- QR Container -->
+            <div class="flex justify-center my-3 bg-white p-4 rounded-xl border border-slate-200 shadow-inner">
+                <div id="qrcode-canvas" class="flex justify-center"></div>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Balance:</span>
+                    <strong class="text-emerald-600" id="qr-modal-balance">$25.00</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Beneficiary:</span>
+                    <strong class="text-slate-800" id="qr-modal-beneficiary">Amina K.</strong>
+                </div>
+            </div>
+
+            <button onclick="closeQRModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Global App State
+        let currentRole = 'donor';
+        let totalFundedAmount = 1450.00;
+        let totalRedeemedAmount = 980.00;
+        let merchantBalance = 645.00;
+
+        // Vouchers Master List
+        let vouchers = [
+            {
+                id: 'VOUCH-8921',
+                donorName: 'Elena Rostova',
+                category: 'Groceries',
+                initialAmount: 25.00,
+                balance: 25.00,
+                beneficiaryName: 'Amina K. (Displaced Family)',
+                smsCode: '784-912',
+                status: 'Active',
+                expiryDate: '2026-10-15',
+                allowedItems: ['Food', 'Milk', 'Vegetables', 'Groceries', 'Food/Groceries'],
+                disallowedItems: ['Alcohol', 'Tobacco', 'Electronics']
+            },
+            {
+                id: 'VOUCH-4402',
+                donorName: 'Global Relief Fund',
+                category: 'Pharmacy',
+                initialAmount: 30.00,
+                balance: 30.00,
+                beneficiaryName: 'Marcus V. (Elderly Care)',
+                smsCode: '319-402',
+                status: 'Active',
+                expiryDate: '2026-11-01',
+                allowedItems: ['Pharmacy', 'Medicine', 'Bandages', 'First Aid'],
+                disallowedItems: ['Alcohol', 'Tobacco', 'Groceries']
+            },
+            {
+                id: 'VOUCH-1198',
+                donorName: 'Community Chest',
+                category: 'Education',
+                initialAmount: 50.00,
+                balance: 50.00,
+                beneficiaryName: 'Sophia T. (Student Aid)',
+                smsCode: '901-224',
+                status: 'Active',
+                expiryDate: '2026-12-31',
+                allowedItems: ['Books', 'Stationery', 'School Supplies', 'Education'],
+                disallowedItems: ['Alcohol', 'Tobacco', 'Food']
+            }
+        ];
+
+        // Audit Logs (Public Micro-Ledger)
+        let auditLogs = [
+            {
+                id: 'TX-9021',
+                timestamp: '10 mins ago',
+                voucherId: 'VOUCH-3301',
+                donorName: 'David K.',
+                merchantName: 'City Care Pharmacy',
+                beneficiaryName: 'Omar H.',
+                amount: '$20.00',
+                category: 'Pharmacy',
+                items: ['Insulin Pen', 'Sterile Gauze'],
+                proofHash: '0x8f2a...7c91'
+            },
+            {
+                id: 'TX-8910',
+                timestamp: '42 mins ago',
+                voucherId: 'VOUCH-2204',
+                donorName: 'Sarah Jenkins',
+                merchantName: 'Green Grocery Depot',
+                beneficiaryName: 'Fatima M.',
+                amount: '$35.00',
+                category: 'Groceries',
+                items: ['Flour (10kg)', 'Cooking Oil', 'Lentils'],
+                proofHash: '0x3e1b...94d2'
+            }
+        ];
+
+        // Participating Merchants
+        const merchants = [
+            {
+                name: 'Green Grocery Depot',
+                category: 'Groceries & Produce',
+                address: '142 Market St (0.4 miles away)',
+                rating: '4.9 ★',
+                verified: true
+            },
+            {
+                name: 'City Care Pharmacy',
+                category: 'Medicines & First Aid',
+                address: '88 Health Ave (0.8 miles away)',
+                rating: '4.8 ★',
+                verified: true
+            },
+            {
+                name: 'Pioneer Book & Supply',
+                category: 'School & Educational Supplies',
+                address: '201 Scholar Way (1.2 miles away)',
+                rating: '5.0 ★',
+                verified: true
+            }
+        ];
+
+        // Selected Merchant Voucher State
+        let activeSelectedVoucher = null;
+        let merchantCart = [];
+
+        // Role Tab Switcher
+        function switchRole(role) {
+            currentRole = role;
+            
+            // Hide all views
+            document.getElementById('view-donor').classList.add('hidden');
+            document.getElementById('view-beneficiary').classList.add('hidden');
+            document.getElementById('view-merchant').classList.add('hidden');
+
+            // Reset buttons
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.className = "role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all duration-200 flex items-center space-x-1.5";
+            });
+
+            // Highlight Active Tab
+            const activeTab = document.getElementById(`tab-${role}`);
+            activeTab.className = "role-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-1.5 bg-indigo-600 text-white shadow";
+
+            // Show selected view
+            document.getElementById(`view-${role}`).classList.remove('hidden');
+
+            // Refresh specific views
+            if (role === 'beneficiary') {
+                renderBeneficiaryVouchers();
+                renderStoresDirectory();
+            } else if (role === 'merchant') {
+                renderMerchantQuickPickers();
+            } else if (role === 'donor') {
+                renderAuditFeed();
+            }
+        }
+
+        // Render Audit Feed
+        function renderAuditFeed() {
+            const container = document.getElementById('audit-feed-list');
+            container.innerHTML = auditLogs.map(log => `
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-900">${log.merchantName}</span>
+                            <span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">${log.voucherId}</span>
+                        </div>
+                        <span class="text-teal-700 font-extrabold text-sm">${log.amount}</span>
+                    </div>
+                    <div class="text-xs text-slate-600 flex items-center space-x-1">
+                        <i class="fa-solid fa-receipt text-slate-400 text-xs mr-1"></i>
+                        <span>Claimed Items: <strong>${log.items.join(', ')}</strong></span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200/60">
+                        <span>Funded by <strong>${log.donorName}</strong> for ${log.beneficiaryName}</span>
+                        <span class="font-mono text-indigo-600"><i class="fa-solid fa-link"></i> ${log.proofHash}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Beneficiary Cards
+        function renderBeneficiaryVouchers() {
+            const container = document.getElementById('beneficiary-vouchers-container');
+            if (vouchers.length === 0) {
+                container.innerHTML = `<p class="col-span-3 text-center text-slate-400 py-8">No active vouchers available in your wallet.</p>`;
+                return;
+            }
+
+            container.innerHTML = vouchers.map(v => {
+                let catBg = v.category === 'Groceries' ? 'bg-teal-50 text-teal-800 border-teal-200' :
+                            v.category === 'Pharmacy' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :
+                            'bg-amber-50 text-amber-800 border-amber-200';
+
+                let icon = v.category === 'Groceries' ? 'fa-basket-shopping' :
+                           v.category === 'Pharmacy' ? 'fa-capsules' : 'fa-book-open';
+
+                return `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                    <div class="p-5 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg border ${catBg} flex items-center space-x-1">
+                                <i class="fa-solid ${icon} mr-1"></i> ${v.category}
+                            </span>
+                            <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${v.id}</span>
+                        </div>
+
+                        <div>
+                            <span class="text-xs text-slate-400 block font-medium">Available Balance</span>
+                            <div class="text-2xl font-extrabold text-slate-900">$${v.balance.toFixed(2)}</div>
+                        </div>
+
+                        <div class="text-xs text-slate-600 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                            <div>Donor: <strong class="text-slate-800">${v.donorName}</strong></div>
+                            <div>Expires: <span class="text-slate-700">${v.expiryDate}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
+                        <button onclick="showQRModal('${v.id}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-qrcode text-amber-400"></i>
+                            <span>Show QR Code</span>
+                        </button>
+                        <button onclick="showSMSCode('${v.smsCode}', '${v.category}', ${v.balance})" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-comment-sms"></i>
+                            <span>SMS Code</span>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Render Stores Directory
+        function renderStoresDirectory() {
+            const container = document.getElementById('store-directory-container');
+            container.innerHTML = merchants.map(m => `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between space-y-3">
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-900 text-sm">${m.name}</h4>
+                            <span class="text-xs text-amber-600 font-bold">${m.rating}</span>
+                        </div>
+                        <span class="text-xs text-teal-700 font-medium block">${m.category}</span>
+                        <p class="text-xs text-slate-500">${m.address}</p>
+                    </div>
+                    <button onclick="switchRole('merchant')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                        <span>Simulate Merchant Checkout</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function setAmount(amt) {
+            document.getElementById('custom-amount').value = amt;
+        }
+
+        function handleMintVoucher(e) {
+            e.preventDefault();
+
+            const donorName = document.getElementById('donor-name').value || 'Anonymous Donor';
+            const beneficiaryName = document.getElementById('beneficiary-select').value;
+            const categoryElem = document.querySelector('input[name="voucher-category"]:checked');
+            const category = categoryElem ? categoryElem.value : 'Groceries';
+            const amountInput = parseFloat(document.getElementById('custom-amount').value) || 25.00;
+
+            const newVoucher = {
+                id: `VOUCH-${Math.floor(1000 + Math.random() * 9000)}`,
+                donorName: donorName,
+                category: category,
+                initialAmount: amountInput,
+                balance: amountInput,
+                beneficiaryName: beneficiaryName,
+                smsCode: `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`,
+                status: 'Active',
+                expiryDate: '2026-11-30',
+                allowedItems: category === 'Groceries' ? ['Food', 'Milk', 'Vegetables', 'Groceries', 'Food/Groceries'] :
+                              category === 'Pharmacy' ? ['Pharmacy', 'Medicine', 'Bandages'] : ['Books', 'Stationery'],
+                disallowedItems: ['Alcohol', 'Tobacco', 'Electronics']
+            };
+
+            vouchers.unshift(newVoucher);
+            totalFundedAmount += amountInput;
+
+            // Update UI metrics
+            document.getElementById('metric-total-funded').innerText = `$${totalFundedAmount.toFixed(2)}`;
+            document.getElementById('stat-active-count').innerText = vouchers.length;
+
+            showToast(`Success! Minted $${amountInput.toFixed(2)} ${category} Voucher for ${beneficiaryName}.`, 'success');
+
+            // Optionally switch to beneficiary view to show result
+            setTimeout(() => {
+                switchRole('beneficiary');
+            }, 1200);
+        }
+
+        function showQRModal(voucherId) {
+            const v = vouchers.find(x => x.id === voucherId);
+            if (!v) return;
+
+            document.getElementById('qr-modal-category').innerText = `${v.category} Voucher`;
+            document.getElementById('qr-modal-id').innerText = v.id;
+            document.getElementById('qr-modal-balance').innerText = `$${v.balance.toFixed(2)}`;
+            document.getElementById('qr-modal-beneficiary').innerText = v.beneficiaryName;
+
+            // Clear previous QR
+            const qrDiv = document.getElementById('qrcode-canvas');
+            qrDiv.innerHTML = '';
+            
+            new QRCode(qrDiv, {
+                text: JSON.stringify({ id: v.id, sms: v.smsCode, amt: v.balance }),
+                width: 140,
+                height: 140,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function showSMSCode(code, category, balance) {
+            document.getElementById('sms-code-display').innerText = code;
+            document.getElementById('sms-phone-modal').classList.remove('hidden');
+            document.getElementById('sms-phone-modal').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleFeaturePhoneMode() {
+            const modal = document.getElementById('sms-phone-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function renderMerchantQuickPickers() {
+            const container = document.getElementById('quick-voucher-pickers');
+            if (vouchers.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400">No active vouchers found.</span>`;
+                return;
+            }
+
+            container.innerHTML = vouchers.map(v => `
+                <button onclick="selectVoucherForMerchant('${v.id}')" class="w-full text-left p-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-xs flex justify-between items-center transition">
+                    <div>
+                        <strong class="text-slate-800">${v.id}</strong> (${v.category})
+                        <span class="text-slate-500 block text-[10px]">Code: ${v.smsCode} • ${v.beneficiaryName}</span>
+                    </div>
+                    <span class="font-bold text-teal-600">$${v.balance.toFixed(2)}</span>
+                </button>
+            `).join('');
+        }
+
+        function lookupVoucher() {
+            const query = document.getElementById('merchant-search-code').value.trim();
+            const v = vouchers.find(x => x.id.toLowerCase() === query.toLowerCase() || x.smsCode === query);
+
+            if (!v) {
+                showToast('Invalid or expired voucher code.', 'error');
+                return;
+            }
+
+            selectVoucherForMerchant(v.id);
+        }
+
+        function selectVoucherForMerchant(voucherId) {
+            const v = vouchers.find(x => x.id === voucherId);
+            if (!v) return;
+
+            activeSelectedVoucher = v;
+
+            document.getElementById('sv-category').innerText = `${v.category} VOUCHER`;
+            document.getElementById('sv-id').innerText = v.id;
+            document.getElementById('sv-balance').innerText = `$${v.balance.toFixed(2)}`;
+            document.getElementById('sv-beneficiary').innerText = v.beneficiaryName;
+            document.getElementById('sv-restrictions').innerText = v.allowedItems.join(', ');
+
+            document.getElementById('selected-voucher-box').classList.remove('hidden');
+            
+            // Clear cart & re-validate
+            merchantCart = [];
+            renderCart();
+            validateCartPolicy();
+
+            showToast(`Loaded Voucher ${v.id} ($${v.balance.toFixed(2)}) into POS Terminal.`, 'info');
+        }
+
+        function addItemToCart(name, category, price) {
+            if (!activeSelectedVoucher) {
+                showToast('Please select or scan a voucher first!', 'warning');
+                return;
+            }
+
+            merchantCart.push({ name, category, price });
+            renderCart();
+            validateCartPolicy();
+        }
+
+        function removeItemFromCart(index) {
+            merchantCart.splice(index, 1);
+            renderCart();
+            validateCartPolicy();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-list');
+            if (merchantCart.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Cart is empty. Click inventory items above to scan them in.</p>`;
+                document.getElementById('cart-total-display').innerText = '$0.00';
+                return;
+            }
+
+            let total = 0;
+            container.innerHTML = merchantCart.map((item, idx) => {
+                total += item.price;
+                
+                // Check if this item is restricted for active voucher
+                let isViolating = activeSelectedVoucher && activeSelectedVoucher.disallowedItems.includes(item.category);
+
+                return `
+                <div class="flex items-center justify-between p-2 rounded-lg ${isViolating ? 'bg-red-50 border border-red-300' : 'bg-white border border-slate-200'} text-xs">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="removeItemFromCart(${idx})" class="text-red-500 hover:text-red-700 px-1"><i class="fa-solid fa-trash"></i></button>
+                        <span class="font-medium text-slate-800">${item.name}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isViolating ? 'bg-red-200 text-red-800' : 'bg-slate-100 text-slate-600'}">${item.category}</span>
+                    </div>
+                    <span class="font-bold ${isViolating ? 'text-red-700' : 'text-slate-900'}">$${item.price.toFixed(2)}</span>
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total-display').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function validateCartPolicy() {
+            const alertBox = document.getElementById('policy-alert-box');
+            const alertMsg = document.getElementById('policy-alert-msg');
+            const settleBtn = document.getElementById('btn-settle');
+            const badge = document.getElementById('validation-badge');
+
+            if (!activeSelectedVoucher) {
+                badge.innerText = 'Awaiting Voucher';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+                settleBtn.disabled = true;
+                alertBox.classList.add('hidden');
+                return;
+            }
+
+            const total = merchantCart.reduce((sum, item) => sum + item.price, 0);
+
+            // Check 1: Restricted items check
+            const hasRestricted = merchantCart.some(item => activeSelectedVoucher.disallowedItems.includes(item.category));
+            if (hasRestricted) {
+                alertBox.classList.remove('hidden');
+                alertMsg.innerText = `⛔ POLICY VIOLATION: Restricted item category detected in cart! Remove tobacco/alcohol to proceed.`;
+                badge.innerText = 'Policy Violation';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-300';
+                settleBtn.disabled = true;
+                return;
+            }
+
+            // Check 2: Exceeding balance
+            if (total > activeSelectedVoucher.balance) {
+                alertBox.classList.remove('hidden');
+                alertMsg.innerText = `⚠️ Balance Exceeded: Cart total ($${total.toFixed(2)}) is higher than voucher balance ($${activeSelectedVoucher.balance.toFixed(2)}).`;
+                badge.innerText = 'Insufficient Balance';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+                settleBtn.disabled = true;
+                return;
+            }
+
+            // Check 3: Empty cart
+            if (merchantCart.length === 0) {
+                alertBox.classList.add('hidden');
+                badge.innerText = 'Cart Empty';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+                settleBtn.disabled = true;
+                return;
+            }
+
+            // All checks passed
+            alertBox.classList.add('hidden');
+            badge.innerText = 'Ready for Settlement';
+            badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+            settleBtn.disabled = false;
+        }
+
+        function executeSettlement() {
+            if (!activeSelectedVoucher || merchantCart.length === 0) return;
+
+            const totalAmount = merchantCart.reduce((sum, item) => sum + item.price, 0);
+            const itemNames = merchantCart.map(i => i.name);
+
+            // Deduct balance
+            activeSelectedVoucher.balance -= totalAmount;
+            if (activeSelectedVoucher.balance <= 0) {
+                activeSelectedVoucher.status = 'Redeemed';
+            }
+
+            // Update global metrics
+            totalRedeemedAmount += totalAmount;
+            merchantBalance += totalAmount;
+
+            document.getElementById('metric-total-redeemed').innerText = `$${totalRedeemedAmount.toFixed(2)}`;
+            document.getElementById('stat-claimed-amount').innerText = `$${totalRedeemedAmount.toFixed(2)}`;
+            document.getElementById('merchant-settlement-balance').innerText = `$${merchantBalance.toFixed(2)}`;
+
+            // Create new audit ledger log
+            const newLog = {
+                id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
+                timestamp: 'Just now',
+                voucherId: activeSelectedVoucher.id,
+                donorName: activeSelectedVoucher.donorName,
+                merchantName: 'Green Grocery Depot',
+                beneficiaryName: activeSelectedVoucher.beneficiaryName,
+                amount: `$${totalAmount.toFixed(2)}`,
+                category: activeSelectedVoucher.category,
+                items: itemNames,
+                proofHash: `0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`
+            };
+
+            auditLogs.unshift(newLog);
+
+            showToast(`Settlement Approved! $${totalAmount.toFixed(2)} transferred to Green Grocery Depot. Proof logged to ledger.`, 'success');
+
+            // Reset Merchant POS
+            merchantCart = [];
+            activeSelectedVoucher = null;
+            document.getElementById('selected-voucher-box').classList.add('hidden');
+            renderCart();
+            validateCartPolicy();
+            renderMerchantQuickPickers();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bg = type === 'success' ? 'bg-emerald-900 border-emerald-700 text-emerald-100' :
+                     type === 'error' ? 'bg-red-900 border-red-700 text-red-100' :
+                     type === 'warning' ? 'bg-amber-900 border-amber-700 text-amber-100' :
+                     'bg-slate-900 border-slate-700 text-white';
+
+            toast.className = `p-3.5 rounded-xl border shadow-xl text-xs font-semibold flex items-center space-x-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto max-w-md ${bg}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-teal-400'} text-base"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        /* Helper smooth scrolls for demo tour */
+        function focusMintForm() {
+            document.getElementById('mint-card-wrapper').scrollIntoView({ behavior: 'smooth' });
+        }
+        function scrollToAudit() {
+            document.getElementById('audit-feed-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        window.onload = function() {
+            renderAuditFeed();
+            renderBeneficiaryVouchers();
+            renderStoresDirectory();
+            renderMerchantQuickPickers();
+        };
+    </script>
+</body>
+</html>
